@@ -25,7 +25,8 @@ class Plugin(indigo.PluginBase):
         self.pluginPrefs = pluginPrefs
 
         self._schlage = None
-        self.lock_devices = {}  # dict of lock devices by address
+        self.lock_devices = {}  # dict of Indigo lock devices by device ID
+        self.found_locks = {}  # dict of found Schlage locks by MAC address
 
     ########################################
 
@@ -35,8 +36,9 @@ class Plugin(indigo.PluginBase):
         self._schlage = Schlage(Auth(self.pluginPrefs.get("username"), self.pluginPrefs.get("password")))
         locks = self._schlage.locks()
 
-        self.logger.info(f"Found {len(locks)} locks")
-        self.logger.debug(f"Locks: {locks}")
+        for lock in locks:
+            self.found_locks[lock.mac_address] = lock
+            self.logger.info(f"Schlage Lock: {lock.name}@{lock.mac_address} ({lock.model_name})")
 
     def shutdown(self):
         self.logger.debug("shutdown called")
@@ -68,7 +70,8 @@ class Plugin(indigo.PluginBase):
     def get_lock_list(self, filter="", valuesDict=None, typeId="", targetId=0):
         self.logger.debug(f"get_lock_list: {filter = }, {typeId = }, {valuesDict = }, {targetId = }")
         retList = []
-
+        for lock in self.found_locks.values():
+            retList.append((lock.mac_address, f"{lock.name} ({lock.model_name})"))
         return retList
 
     def menuChanged(self, valuesDict, typeId=0, devId=0):
@@ -81,16 +84,16 @@ class Plugin(indigo.PluginBase):
 
     def actionControlDimmerRelay(self, action, device):
         self.logger.debug(f"{device.name}: sending {action.deviceAction} ({action.actionValue}) to {device.address}")
-        msg_data = {"type": "call_service", "target": {"entity_id": device.address}}
 
-        if device.deviceTypeId == "ha_lock":
-            msg_data['domain'] = 'lock'
+        if device.deviceTypeId == "lock":
             if action.deviceAction == indigo.kDeviceAction.TurnOn:
-                msg_data['service'] = SERVICE_LOCK
-                self.send_ws(msg_data)
+                self.lock_devices[device.id].lock()
 
             elif action.deviceAction == indigo.kDimmerRelayAction.TurnOff:
-                msg_data['service'] = SERVICE_UNLOCK
-                self.send_ws(msg_data)
+                self.lock_devices[device.id].lock()
+
             else:
                 self.logger.warning(f"{device.name}: actionControlDimmerRelay: {device.address} does not support {action.deviceAction}")
+
+        else:
+            self.logger.warning(f"{device.name}: actionControlDimmerRelay: {device.address} is not a lock device")
