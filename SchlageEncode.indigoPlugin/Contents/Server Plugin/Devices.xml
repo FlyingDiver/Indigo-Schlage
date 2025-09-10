@@ -1,9 +1,11 @@
 <?xml version="1.0"?>
 <Devices>
-	<Device type="relay" id="lock" subType="kRelayDeviceSubType.Lock" ui="Lock">
+	<Device type="relay" id="lock" subType="kRelayDeviceSubType.Lock">
 		<Name>Schlage Encode Lock</Name>
 		<ConfigUI>
+			<Field id="IsLockSubType" type="checkbox" hidden="True" defaultValue="True"/>
 			<Field id="SupportsStatusRequest" type="checkbox" hidden="true" defaultValue="false"/>
+			<Field id="SupportsBatteryLevel" type="checkbox" hidden="true" defaultValue="true"/>
 			<Field id="address" type="menu">
                 <Label>Lock:</Label>
                 <List class="self" method="get_lock_list" filter="" dynamicReload="true"/>
@@ -11,15 +13,60 @@
             </Field>
 		</ConfigUI>
 		<States>
-			<State id="lastUpdated">
+			<State id="device_id">
 				<ValueType>String</ValueType>
-				<TriggerLabel>lastUpdated</TriggerLabel>
-				<ControlPageLabel>lastUpdated</ControlPageLabel>
+				<TriggerLabel>Device ID</TriggerLabel>
+				<ControlPageLabel>Device ID</ControlPageLabel>
 			</State>
-			<State id="actual_state">
+			<State id="device_type">
 				<ValueType>String</ValueType>
-				<TriggerLabel>Actual State</TriggerLabel>
-				<ControlPageLabel>Actual State</ControlPageLabel>
+				<TriggerLabel>device_type</TriggerLabel>
+				<ControlPageLabel>device_type</ControlPageLabel>
+			</State>
+			<State id="name">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Name</TriggerLabel>
+				<ControlPageLabel>Name</ControlPageLabel>
+			</State>
+			<State id="model_name">
+				<ValueType>String</ValueType>
+				<TriggerLabel>Model</TriggerLabel>
+				<ControlPageLabel>Model</ControlPageLabel>
+			</State>
+			<State id="connected">
+				<ValueType>String</ValueType>
+				<TriggerLabel>connected</TriggerLabel>
+				<ControlPageLabel>connected</ControlPageLabel>
+			</State>
+			<State id="is_jammed">
+				<ValueType>String</ValueType>
+				<TriggerLabel>is_jammed</TriggerLabel>
+				<ControlPageLabel>is_jammed</ControlPageLabel>
+			</State>
+			<State id="beeper_enabled">
+				<ValueType>String</ValueType>
+				<TriggerLabel>beeper_enabled</TriggerLabel>
+				<ControlPageLabel>beeper_enabled</ControlPageLabel>
+			</State>
+			<State id="auto_lock_time">
+				<ValueType>String</ValueType>
+				<TriggerLabel>auto_lock_time</TriggerLabel>
+				<ControlPageLabel>auto_lock_time</ControlPageLabel>
+			</State>
+			<State id="lock_and_leave_enabled">
+				<ValueType>String</ValueType>
+				<TriggerLabel>lock_and_leave_enabled</TriggerLabel>
+				<ControlPageLabel>lock_and_leave_enabled</ControlPageLabel>
+			</State>
+			<State id="firmware_version">
+				<ValueType>String</ValueType>
+				<TriggerLabel>firmware_version</TriggerLabel>
+				<ControlPageLabel>firmware_version</ControlPageLabel>
+			</State>
+			<State id="mac_address">
+				<ValueType>String</ValueType>
+				<TriggerLabel>mac_address</TriggerLabel>
+				<ControlPageLabel>mac_address</ControlPageLabel>
 			</State>
 		</States>
 	</Device>

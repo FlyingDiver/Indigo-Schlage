@@ -6,6 +6,12 @@
     <Field type="textfield" id="password" secure="true">
         <Label>Schlage Encode Password:</Label>
     </Field>
+  <Field id="updateFrequency" type="textfield" defaultValue="15">
+    <Label>Update frequency (minutes):</Label>
+  </Field>
+  <Field id="statusNote" type="label" fontSize="small" fontColor="darkgray">
+    <Label>Minimum update interval is 3 minutes.  Default is 15.</Label>
+  </Field>
 
     <Field id="logLevel" type="menu" defaultValue="20">
         <Label>Event Logging Level:</Label>

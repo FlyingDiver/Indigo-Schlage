@@ -1,1 +1,1 @@
-pyschlage==2025.7.3
+pyschlage==2025.9.0
