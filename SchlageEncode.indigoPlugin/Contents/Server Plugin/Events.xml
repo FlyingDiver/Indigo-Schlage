@@ -1,6 +1,9 @@
 <?xml version="1.0"?>
 <Events>
 	<SupportURL>http://forums.indigodomo.com/viewforum.php?f=177</SupportURL>
+	<Event id="locked-jammed">
+        <Name>Lock Jammed Event</Name>
+    </Event>
 </Events>
 
 

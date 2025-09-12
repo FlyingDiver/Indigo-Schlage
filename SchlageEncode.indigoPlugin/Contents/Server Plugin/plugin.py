@@ -119,6 +119,14 @@ class Plugin(indigo.PluginBase):
         ]
         device.updateStatesOnServer(update_list)
 
+        if lock.is_jammed:
+            for trigger in indigo.triggers.iter("self"):
+                if trigger.pluginTypeId == "lock_jammed":
+                    trigger_dict = {"schlage-lock-jammed": True,
+                                    "lock-id": lock.device_id,
+                                    "clock-name": lock.name}
+                    indigo.trigger.execute(trigger, trigger_data=trigger_dict)
+
         self.logger.debug(f"{device.name}: Lock '{lock.name}' is {'locked' if lock.is_locked else 'unlocked'}, battery at {lock.battery_level}%")
 
     ########################################
