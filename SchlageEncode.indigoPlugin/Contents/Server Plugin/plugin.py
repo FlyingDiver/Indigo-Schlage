@@ -19,6 +19,7 @@ class Plugin(indigo.PluginBase):
 
         pfmt = logging.Formatter('%(asctime)s.%(msecs)03d\t[%(levelname)8s] %(name)20s.%(funcName)-25s%(msg)s', datefmt='%Y-%m-%d %H:%M:%S')
         self.plugin_file_handler.setFormatter(pfmt)
+
         self.logLevel = int(pluginPrefs.get("logLevel", logging.INFO))
         self.logger.debug(f"{self.logLevel=}")
         self.indigo_log_handler.setLevel(self.logLevel)
@@ -37,9 +38,16 @@ class Plugin(indigo.PluginBase):
 
     def validatePrefsConfigUi(self, valuesDict):    # noqa
         errorDict = indigo.Dict()
-        updateFrequency = int(valuesDict['updateFrequency'])
+
+        if 'username' not in valuesDict or len(valuesDict['username'].strip()) == 0:
+            errorDict['username'] = "Username cannot be empty"
+        if 'password' not in valuesDict or len(valuesDict['password'].strip()) == 0:
+            errorDict['password'] = "Password cannot be empty"
+
+        updateFrequency = int(valuesDict.get('updateFrequency', 60))
         if (updateFrequency < 3) or (updateFrequency > 60):
             errorDict['updateFrequency'] = "Update frequency is invalid - enter a valid number (between 3 and 60)"
+
         if len(errorDict) > 0:
             return False, valuesDict, errorDict
         return True
@@ -120,6 +128,7 @@ class Plugin(indigo.PluginBase):
         device.updateStatesOnServer(update_list)
 
         if lock.is_jammed:
+            self.logger.warning(f"{device.name}: Lock '{lock.name}' is jammed")
             for trigger in indigo.triggers.iter("self"):
                 if trigger.pluginTypeId == "lock_jammed":
                     trigger_dict = {"schlage-lock-jammed": True,
@@ -146,13 +155,6 @@ class Plugin(indigo.PluginBase):
         if oldDevice.address != newDevice.address:
             return True
         return False
-
-    def closedPrefsConfigUi(self, valuesDict, userCancelled):
-        if not userCancelled:
-            self.logger.threaddebug(f"closedPrefsConfigUi: valuesDict = {valuesDict}")
-            self.logLevel = int(self.pluginPrefs.get("logLevel", logging.INFO))
-            self.indigo_log_handler.setLevel(self.logLevel)
-            self.logger.debug(f"logLevel = {self.logLevel}")
 
     def get_lock_list(self, filter="", valuesDict=None, typeId="", targetId=0):
         self.logger.debug(f"get_lock_list: {filter = }, {typeId = }, {valuesDict = }, {targetId = }")
