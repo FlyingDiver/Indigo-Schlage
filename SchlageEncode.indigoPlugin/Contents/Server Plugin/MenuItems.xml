@@ -1,3 +1,7 @@
 <?xml version="1.0"?>
 <MenuItems>
+    <MenuItem id="menu1">
+        <Name>Update locks from Schlage Servers</Name>
+        <CallbackMethod>menu_update_locks</CallbackMethod>
+    </MenuItem>
 </MenuItems>

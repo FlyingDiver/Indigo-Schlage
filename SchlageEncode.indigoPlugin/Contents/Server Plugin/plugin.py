@@ -1,11 +1,13 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import indigo
+import indigo # noqa
 import logging
 import time
-import json
 from pyschlage import Auth, Schlage
+from pyschlage.exceptions import NotAuthorizedError, UnknownError
+
+K_UPDATE_DELAY = 10.0  # delay after lock action before requesting update
 
 ################################################################################
 
@@ -26,11 +28,10 @@ class Plugin(indigo.PluginBase):
         self.plugin_file_handler.setLevel(self.logLevel)
         self.pluginPrefs = pluginPrefs
 
+        self._auth = None
         self._schlage = None
         self.lock_devices = {}  # dict of Indigo lock devices by device ID
         self.found_locks = {}  # dict of found Schlage lock objects by MAC address
-
-        self.update_needed = False
 
         self.updateFrequency = float(self.pluginPrefs.get('updateFrequency', "15")) * 60.0
         self.logger.debug(f"updateFrequency = {self.updateFrequency}")
@@ -62,35 +63,35 @@ class Plugin(indigo.PluginBase):
             self.updateFrequency = float(valuesDict['updateFrequency']) * 60.0
             self.logger.debug(f"updateFrequency = {self.updateFrequency}")
             self.next_update = time.time()
-            self.update_needed = True
 
     ########################################
 
     def startup(self):
         self.logger.debug("startup called")
 
-        self._schlage = Schlage(Auth(self.pluginPrefs.get("username"), self.pluginPrefs.get("password")))
-
-        locks = self._schlage.locks()
-        for lock in locks:
-            self.found_locks[lock.mac_address] = lock
-            self.logger.info(f"Found Schlage Lock: {lock.name}@{lock.mac_address} ({lock.model_name})")
-            self.logger.debug(f"{lock}")
-
-        users = self._schlage.users()
-        for user in users:
-            self.logger.debug(f"Schlage User: {user})")
+        self._auth = Auth(self.pluginPrefs.get("username"), self.pluginPrefs.get("password"))
+        self._auth.authenticate()
+        self._schlage = Schlage(self._auth)
+        self.get_locks()
 
     def shutdown(self):
         self.logger.debug("shutdown called")
 
+    def get_locks(self):
+        locks = self._schlage.locks(include_access_codes=False)
+        for lock in locks:
+            self.found_locks[lock.mac_address] = lock
+            self.logger.debug(f"Found {lock}")
+
+    def menu_update_locks(self):
+        self.get_locks()
+        return True
+
     def run_concurrent_thread(self):
-        self.logger.debug("run_concurrent_thread called")
         try:
             while True:
-                self.sleep(10.0)
-                if (time.time() > self.next_update) or self.update_needed:
-                    self.update_needed = False
+                self.sleep(1.0)
+                if time.time() > self.next_update:
                     self.next_update = time.time() + self.updateFrequency
 
                     for device_id in self.lock_devices.keys():
@@ -98,12 +99,18 @@ class Plugin(indigo.PluginBase):
 
         except self.StopThread:
             pass
-        self.logger.debug("run_concurrent_thread terminating")
 
     def update_lock(self, device):
 
         lock = self.lock_devices[device.id]
-        lock.refresh()
+        try:
+            lock.refresh()
+        except NotAuthorizedError as e:
+            self.logger.error(f"pyschlage.exceptions.NotAuthorizedError: {e}")
+            return
+        except UnknownError as e:
+            self.logger.error(f"pyschlage.exceptions.UnknownError: {e}")
+            return
 
         if lock.is_locked:
             device.updateStateOnServer("onOffState", True)
@@ -180,10 +187,11 @@ class Plugin(indigo.PluginBase):
 
         if action.deviceAction == indigo.kDeviceAction.Lock:
             self.lock_devices[device.id].lock()
+            self.next_update = time.time() + K_UPDATE_DELAY
 
         elif action.deviceAction == indigo.kDeviceAction.Unlock:
             self.lock_devices[device.id].unlock()
-            self.update_needed = True
+            self.next_update = time.time() + K_UPDATE_DELAY
 
         else:
             self.logger.warning(f"{device.name}: actionControlDimmerRelay: {device.address} does not support {action.deviceAction}")
